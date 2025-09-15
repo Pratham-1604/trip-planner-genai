@@ -3,7 +3,7 @@ from llm_client import invoke_llm
 import json
 import re
 
-def generate_itinerary(parsed_input: dict):
+def generate_itinerary(parsed_input: dict, summary: str):
     location = parsed_input["location"]
     duration = parsed_input["duration_days"]
     budget = parsed_input["budget"]
@@ -14,7 +14,8 @@ def generate_itinerary(parsed_input: dict):
     Generate a {duration}-day itinerary for {location}, India.
     Traveler budget: {budget} INR.
     Interests: {themes}.
-
+    Here is a summary of reviews by people on reddit: {summary}
+  
     Rules:
     - Split plan into {duration} days
     - Each day must include morning, afternoon, evening activities
