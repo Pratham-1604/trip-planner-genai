@@ -9,7 +9,7 @@ from features.reddit_scraper.scraper import fetch_reddit_comments
 from features.reddit_scraper.preprocess import preprocess_reddit_data
 from features.reddit_scraper.summarizer import summarize_places
 from features.emt_plus_payment.emt_service import EMTService
-from features.iternary_generation.basic_visualization_generation import visualization_generation
+from features.iternary_generation.basic_visualization_generation import visualization_generation , add_images_to_itinerary
 
 from base_models import (
     UserRequest,
@@ -116,9 +116,12 @@ def get_story_telling(input_data: StoryTelling):
         iternary = input_data.iternary
         resp = visualization_generation(iternary)
         
+         # Step 2: Add real images to each place
+        resp_with_images = add_images_to_itinerary(resp)
+        
         return JSONResponse(
             status_code=200,
-            content=resp
+            content=resp_with_images
         )
 
     except Exception as e:
@@ -153,27 +156,23 @@ def search_hotels(
 
 @app.get("/search-flights")
 def search_flights(
-    origin: str = Query(..., description="Origin airport code, e.g., NYC"),
-    destination: str = Query(..., description="Destination airport code, e.g., LON"),
-    departure_date: str = Query(..., description="Departure date in YYYY-MM-DD"),
-    return_date: str = Query(None, description="Optional return date in YYYY-MM-DD"),
-    adults: int = Query(1, description="Number of adult passengers")
+    origin: str = Query(..., description="Origin IATA code"),
+    destination: str = Query(..., description="Destination IATA code"),
+    departure_date: str = Query(..., description="Departure date YYYY-MM-DD"),
+    return_date: str = Query(None, description="Return/arrival date YYYY-MM-DD"),
+    adults: int = Query(1, description="Number of adults")
 ):
     """
-    Search flights from origin to destination.
-    Example GET request:
-    /search-flights?origin=NYC&destination=LON&departure_date=2025-09-22&return_date=2025-09-28&adults=2
+    Enhanced flight search API that supports both departure and return dates.
     """
-    result = service.search_flights(
+    result = service.search_flights_enhanced(
         origin=origin,
         destination=destination,
-        date=departure_date,
+        departure_date=departure_date,
         return_date=return_date,
         adults=adults
     )
-    return result
-
-
+    return JSONResponse(content=result)
 
 
 @app.get('/')

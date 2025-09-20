@@ -152,7 +152,6 @@ class EMTService:
             if not hotel_offers:
                 continue
 
-            # include best offer price and all offers
             best_offer = hotel_offers[0]
             final_results.append({
                 "id": offer_data.get("hotelId"),
@@ -166,7 +165,7 @@ class EMTService:
                 "rating": hotel_info.get("rating"),
                 "address": hotel_info.get("address", {}),
                 "total_offers": len(hotel_offers),
-                "offers": hotel_offers  # full offers included
+                "offers": hotel_offers
             })
 
         if debug:
@@ -179,15 +178,63 @@ class EMTService:
             "city_code": city_code
         }
 
-    # ------------------ FLIGHT SEARCH ------------------
-    def search_flights(self, origin, destination, date, return_date=None, adults=1):
+    # ------------------ FLIGHT SEARCH (ENHANCED) ------------------
+    def search_flights_enhanced(self, origin, destination, departure_date, return_date=None, adults=1, debug=True):
+        """
+        Enhanced flight search with mock support for round-trip flights.
+        """
         if self.use_mock:
-            return {
-                "flights": [
-                    {"airline": "Indigo", "origin": origin, "destination": destination, "date": date, "price": "₹4500"},
-                    {"airline": "Air India", "origin": origin, "destination": destination, "date": date, "price": "₹5200"}
-                ]
-            }
+            flights = [
+                {
+                    "flight_number": "AI101",
+                    "airline": "Air India",
+                    "origin": origin,
+                    "destination": destination,
+                    "departure_time": f"{departure_date}T08:00",
+                    "arrival_time": f"{departure_date}T12:00",
+                    "price": "₹5000",
+                    "duration": "4H",
+                    "stops": 0
+                },
+                {
+                    "flight_number": "6E203",
+                    "airline": "Indigo",
+                    "origin": origin,
+                    "destination": destination,
+                    "departure_time": f"{departure_date}T09:00",
+                    "arrival_time": f"{departure_date}T13:30",
+                    "price": "₹4500",
+                    "duration": "4H30M",
+                    "stops": 0
+                }
+            ]
+            if return_date:
+                # add return flights
+                flights.extend([
+                    {
+                        "flight_number": "AI102",
+                        "airline": "Air India",
+                        "origin": destination,
+                        "destination": origin,
+                        "departure_time": f"{return_date}T14:00",
+                        "arrival_time": f"{return_date}T18:00",
+                        "price": "₹5000",
+                        "duration": "4H",
+                        "stops": 0
+                    },
+                    {
+                        "flight_number": "6E204",
+                        "airline": "Indigo",
+                        "origin": destination,
+                        "destination": origin,
+                        "departure_time": f"{return_date}T15:00",
+                        "arrival_time": f"{return_date}T19:30",
+                        "price": "₹4500",
+                        "duration": "4H30M",
+                        "stops": 0
+                    }
+                ])
+            return {"flights": flights}
 
         if not self.amadeus_token:
             return {"error": "No Amadeus token available"}
@@ -197,10 +244,10 @@ class EMTService:
         params = {
             "originLocationCode": origin,
             "destinationLocationCode": destination,
-            "departureDate": date,
+            "departureDate": departure_date,
             "adults": adults,
             "currencyCode": "USD",
-            "max": 5
+            "max": 10
         }
         if return_date:
             params["returnDate"] = return_date
@@ -210,14 +257,25 @@ class EMTService:
             try:
                 response = requests.get(url, headers=headers, params=params, timeout=timeout)
                 if response.status_code == 200:
-                    flights = response.json().get("data", [])
-                    return {"flights": self._parse_flight_data(flights, origin, destination, date)}
+                    flights_data = response.json().get("data", [])
+                    flights = self._parse_flight_data(flights_data, origin, destination, departure_date)
+                    if debug:
+                        print(f"✅ Found {len(flights)} flight offers")
+                    return {"flights": flights}
+                else:
+                    if debug:
+                        print(f"❌ API Error {response.status_code}: {response.text}")
+            except requests.exceptions.Timeout:
+                if debug:
+                    print(f"⏰ Timeout attempt {attempt}")
             except Exception as e:
-                if attempt == 3:
-                    return {"error": str(e)}
+                if debug:
+                    print(f"❌ Exception: {e}")
             time.sleep(3)
-        return {"error": "Flight search failed"}
 
+        return {"error": "Flight search failed after multiple attempts"}
+
+    # Keep original _parse_flight_data
     def _parse_flight_data(self, flights, origin, destination, date):
         simplified = []
         for f in flights:

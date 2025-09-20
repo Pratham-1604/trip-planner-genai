@@ -2,9 +2,7 @@ from llm_client import invoke_llm
 import json
 import re
 
-from llm_client import invoke_llm
-import json
-import re
+from features.maps_scrapper.image_scraper import fetch_place_image
 
 def visualization_generation(itinerary: dict):
     """
@@ -64,4 +62,16 @@ def visualization_generation(itinerary: dict):
             "story": "",
             "days": []
         }
+
+
+def add_images_to_itinerary(itinerary_json: dict):
+    """
+    Call this after visualization_generation to add image URLs to each place.
+    """
+    for day in itinerary_json.get("days", []):
+        for place in day.get("places", []):
+            place_name = place.get("name")
+            if place_name:
+                place['imageUrl'] = fetch_place_image(place_name) or "default_image.jpg"
+    return itinerary_json
 
