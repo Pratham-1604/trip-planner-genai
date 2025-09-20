@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,6 +8,7 @@ from features.iternary_generation.basic_tag_personalization import apply_persona
 from features.reddit_scraper.scraper import fetch_reddit_comments
 from features.reddit_scraper.preprocess import preprocess_reddit_data
 from features.reddit_scraper.summarizer import summarize_places
+from features.emt_plus_payment.emt_service import EMTService
 from features.iternary_generation.basic_visualization_generation import visualization_generation
 
 from base_models import (
@@ -128,6 +129,52 @@ def get_story_telling(input_data: StoryTelling):
                 'message': 'Failed to Generate Visual Story'
             }
         )
+
+service = EMTService(use_mock=True)
+
+@app.get("/search-hotels")
+def search_hotels(
+    city: str = Query(..., description="IATA city code e.g., NYC, LON, BOM"),
+    checkin: str = Query(..., description="Check-in date (YYYY-MM-DD)"),
+    checkout: str = Query(..., description="Check-out date (YYYY-MM-DD)"),
+    adults: int = Query(1, description="Number of adults")
+):
+    try:
+        result = service.search_hotels_complete(
+            city_code=city,
+            checkin_date=checkin,
+            checkout_date=checkout,
+            adults=adults,
+            debug=True
+        )
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/search-flights")
+def search_flights(
+    origin: str = Query(..., description="Origin airport code, e.g., NYC"),
+    destination: str = Query(..., description="Destination airport code, e.g., LON"),
+    departure_date: str = Query(..., description="Departure date in YYYY-MM-DD"),
+    return_date: str = Query(None, description="Optional return date in YYYY-MM-DD"),
+    adults: int = Query(1, description="Number of adult passengers")
+):
+    """
+    Search flights from origin to destination.
+    Example GET request:
+    /search-flights?origin=NYC&destination=LON&departure_date=2025-09-22&return_date=2025-09-28&adults=2
+    """
+    result = service.search_flights(
+        origin=origin,
+        destination=destination,
+        date=departure_date,
+        return_date=return_date,
+        adults=adults
+    )
+    return result
+
+
+
 
 @app.get('/')
 def default_func():
