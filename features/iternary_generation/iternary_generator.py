@@ -9,7 +9,7 @@ def generate_itinerary(parsed_input: dict, summary: str):
 
     prompt = f"""
     You are a experienced travel planner with experience of 10 years. 
-    Based on the structured trip request below, create a detailed day-by-day itinerary. 
+    Based on the structured trip request below, create a summarized day-by-day itinerary. 
     Include activities, food suggestions, and estimated costs where relevant.
     Ensure the plan matches preferences (themes, pace, accommodation, etc.).
 
