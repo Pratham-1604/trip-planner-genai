@@ -1,19 +1,20 @@
-# itinerary_generator.py
 from llm_client import invoke_llm
 import json
 import re
 
 def generate_itinerary(parsed_input: dict, summary: str):
-    location = parsed_input["location"]
     duration = parsed_input["duration_days"]
     budget = parsed_input["budget"]
     themes = ", ".join(parsed_input["themes"])
 
     prompt = f"""
-    You are an AI trip planner.
-    Generate a {duration}-day itinerary for {location}, India.
-    Traveler budget: {budget} INR.
-    Interests: {themes}.
+    You are a experienced travel planner with experience of 10 years. 
+    Based on the structured trip request below, create a detailed day-by-day itinerary. 
+    Include activities, food suggestions, and estimated costs where relevant.
+    Ensure the plan matches preferences (themes, pace, accommodation, etc.).
+
+    Trip Request JSON:
+    {json.dumps(parsed_input, indent=2)}
     Here is a summary of reviews by people on reddit: {summary}
   
     Rules:
