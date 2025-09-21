@@ -59,7 +59,8 @@ def generate_iternary(user_req: UserRequest):
         que = generate_clarifying_questions(parsed)
         if len(que):
             print('Need More clarification from user')
-            resp = ' '.join(que)
+            que = [' • ' + q for q in que]
+            resp = '\n'.join(que)
             return JSONResponse(
                 status_code=200, 
                 content={
