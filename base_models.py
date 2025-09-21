@@ -146,3 +146,9 @@ class PaymentCaptureRequest(BaseModel):
     vendor: str = "general"
 
 
+class Airport(BaseModel):
+    iata_code: str
+    name: str
+    city: str
+
+

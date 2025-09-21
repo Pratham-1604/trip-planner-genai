@@ -15,10 +15,13 @@ def optimize_itinerary(itinerary_json: dict, parsed_input: dict, start_day: int 
     Also provide reasons for each change.
     """
 
-    itinerary = itinerary_json.get("iternary", [])
+    itinerary = itinerary_json.get("itinerary", [])
     total_days = len(itinerary)
+    print(f"Total days in itinerary: {total_days}, Starting optimization from day {start_day}")
     if total_days == 0 or start_day > total_days:
         return itinerary_json
+    
+    print(f"success")
 
     # 0-indexed
     start_idx = start_day - 1
@@ -57,7 +60,12 @@ def optimize_itinerary(itinerary_json: dict, parsed_input: dict, start_day: int 
     cleaned_weather = re.sub(r"```(json)?", "", raw_weather).strip("` \n")
 
     try:
-        weather_opt = json.loads(cleaned_weather).get("itinerary", [])
+        print(f"Weather LLM Response: {cleaned_weather}")
+        weather_json = json.loads(cleaned_weather)
+        weather_itinerary_dict = weather_json.get("itinerary", {})
+        weather_opt = [weather_itinerary_dict[key] for key in sorted(weather_itinerary_dict.keys())]
+
+        # weather_opt = json.loads(cleaned_weather).get("itinerary", [])
     except Exception as e:
         print(f"Error parsing weather itinerary: {e}")
         weather_opt = itinerary[start_idx:]  # fallback

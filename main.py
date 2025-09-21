@@ -14,6 +14,7 @@ from features.emt_plus_payment.emt_service import EMTService
 from features.emt_plus_payment.emt_booking import EMTBooking
 from features.iternary_generation.basic_visualization_generation import visualization_generation, add_images_to_itinerary
 from features.predictive_pipeline.weather_optimizer import optimize_itinerary
+from data import INDIAN_AIRPORTS
 # Import models from base_models
 from base_models import (
     UserRequest,
@@ -29,8 +30,13 @@ from base_models import (
     GuestInfo,
     ItineraryRequest,
     OptimizeRequest,
-    OptimizeResponse
+    OptimizeResponse,
+    Airport
 )
+
+
+
+
 
 app = FastAPI(title='trip-planner-server')
 
@@ -88,6 +94,15 @@ def generate_iternary(user_req: UserRequest):
                 'message': 'Failed to Generate Iternary'
             }
         )
+
+
+@app.get("/airports/india")
+def get_indian_airports():
+    """
+    Returns a list of major airports in India (mock data)
+    """
+    return INDIAN_AIRPORTS
+
 
 @app.post('/generate-final-iternary')
 def generate_final_iternary(user_req: ClarrifyingUserReq):
@@ -454,11 +469,30 @@ def book_flights_search_workflow(req: FlightBookingRequest):
 
 @app.post("/optimize-itinerary")
 def optimize_itinerary_api(req: OptimizeRequest):
-    return optimize_itinerary(
-        itinerary_json=req.itinerary_json,
-        parsed_input=req.parsed_input,
-        start_day=req.start_day,
-        city=req.city
+    try:
+        resp = optimize_itinerary(
+            itinerary_json=req.itinerary_json,
+            parsed_input=req.parsed_input,
+            start_day=req.start_day,
+            city=req.city
+        
+        )
+        print("Optimized Itinerary:", resp)
+        return JSONResponse(
+            status_code = 200,
+            content = {
+                "message": "Optimized Iternary",
+                "response": resp
+            }
+        )
+    except Exception as e:
+        print(f"Error while optimizing iternary: {e}")
+        return JSONResponse(
+            status_code = 500,
+            content = {
+                "message": "Failed to optimize iternary",
+                "response": req.itinerary_json
+    }
     )
 
 @app.get('/health')
