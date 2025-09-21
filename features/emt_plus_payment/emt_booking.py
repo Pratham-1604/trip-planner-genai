@@ -340,12 +340,259 @@ class EMTBooking:
     # -----------------------------
     # Hotel Booking
     # -----------------------------
-    def book_hotel(self, hotel):
-        """Book hotel - placeholder for real hotel API integration"""
+    def search_hotels_amadeus(self, city_code, checkin_date, checkout_date, adults=1, rooms=1):
+        """Search hotels using Amadeus Hotel Search API"""
+        if self.use_mock:
+            return self._mock_hotel_search_response(city_code, checkin_date, checkout_date, adults, rooms)
+            
+        if not self.amadeus_token:
+            return {"error": "No Amadeus token available"}
+            
+        url = f"{self.base_url}/v3/shopping/hotel-offers"
+        headers = {
+            "Authorization": f"Bearer {self.amadeus_token}",
+            "Content-Type": "application/json"
+        }
+        
+        params = {
+            "cityCode": city_code,
+            "checkInDate": checkin_date,
+            "checkOutDate": checkout_date,
+            "adults": adults,
+            "roomQuantity": rooms
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            return response.json()
+        except Exception as e:
+            return {"error": f"Hotel search failed: {str(e)}"}
+
+    def book_hotel(self, hotel_offer, guest_info=None, rooms=1, adults=1):
+        """Book hotel using Amadeus Hotel Booking API or mock booking"""
+        if self.use_mock:
+            return {
+                "data": {
+                    "type": "hotel-order",
+                    "id": f"MOCK_HOTEL_BOOKING_{uuid.uuid4().hex[:8].upper()}",
+                    "providerConfirmationId": f"HTL{uuid.uuid4().hex[:6].upper()}",
+                    "hotelOffers": [hotel_offer],
+                    "guests": [guest_info or self._get_default_guest()],
+                    "bookingStatus": "confirmed",
+                    "totalPrice": hotel_offer.get("price", "₹0"),
+                    "checkIn": hotel_offer.get("check_in"),
+                    "checkOut": hotel_offer.get("check_out"),
+                    "rooms": rooms,
+                    "adults": adults
+                }
+            }
+        
+        # For real hotel booking, you would integrate with:
+        # 1. Amadeus Hotel Booking API
+        # 2. Booking.com API
+        # 3. Expedia API, etc.
+        
         return {
-            "status": "booked_mock" if self.use_mock else "booked_real", 
-            "hotel": hotel,
-            "booking_reference": f"HTL_{uuid.uuid4().hex[:8].upper()}"
+            "status": "booked_real", 
+            "hotel": hotel_offer,
+            "booking_reference": f"HTL_{uuid.uuid4().hex[:8].upper()}",
+            "message": "Real hotel booking API integration needed"
+        }
+
+    def convert_custom_to_hotel_search_params(self, hotels_data):
+        """Convert custom hotel format to search parameters"""
+        if not hotels_data or len(hotels_data) == 0:
+            return None
+            
+        first_hotel = hotels_data[0]
+        
+        return {
+            "city_code": self._extract_city_code_from_location(first_hotel.get("location", "")),
+            "checkin_date": first_hotel.get("check_in", ""),
+            "checkout_date": first_hotel.get("check_out", ""),
+            "adults": 1
+        }
+
+    def convert_to_hotel_amadeus_format(self, hotel):
+        """Convert custom hotel format to Amadeus hotel offer format"""
+        if hasattr(hotel, 'dict'):
+            hotel = hotel.dict()
+            
+        return {
+            "type": "hotel-offer",
+            "id": hotel.get("hotel_id", "1"),
+            "checkInDate": hotel.get("check_in", ""),
+            "checkOutDate": hotel.get("check_out", ""),
+            "rateCode": "RAC",
+            "rateFamilyEstimated": {
+                "code": "PRO",
+                "type": "P"
+            },
+            "room": {
+                "type": "A1K",
+                "typeEstimated": {
+                    "category": "SUPERIOR_ROOM",
+                    "beds": 1,
+                    "bedType": "KING"
+                },
+                "description": {
+                    "text": "Standard Room"
+                }
+            },
+            "guests": {
+                "adults": 1
+            },
+            "price": {
+                "currency": "INR",
+                "base": hotel.get("price", "₹0").replace("₹", ""),
+                "total": hotel.get("price", "₹0").replace("₹", ""),
+                "variations": {
+                    "average": {
+                        "base": hotel.get("price", "₹0").replace("₹", "")
+                    }
+                }
+            },
+            "policies": {
+                "paymentType": "guarantee",
+                "cancellation": {
+                    "description": {
+                        "text": "Free cancellation before check-in"
+                    }
+                }
+            },
+            "hotel": {
+                "type": "hotel",
+                "hotelId": hotel.get("hotel_id", ""),
+                "name": hotel.get("name", ""),
+                "rating": hotel.get("rating", 0),
+                "cityCode": self._extract_city_code_from_location(hotel.get("location", "")),
+                "latitude": 0.0,
+                "longitude": 0.0,
+                "address": {
+                    "lines": [hotel.get("location", "")],
+                    "cityName": hotel.get("location", ""),
+                    "countryCode": "IN"
+                },
+                "amenities": hotel.get("amenities", [])
+            }
+        }
+
+    def _get_default_guest(self):
+        """Get default guest information"""
+        return {
+            "id": "1",
+            "firstName": "John",
+            "lastName": "Doe",
+            "email": "john@example.com",
+            "phone": "+919999999999",
+            "address": {
+                "street": "123 Main St",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "country": "India",
+                "zipCode": "400001"
+            }
+        }
+
+    def _extract_city_code_from_location(self, location):
+        """Extract city code from location string - simplified implementation"""
+        city_codes = {
+            "mumbai": "BOM",
+            "delhi": "DEL", 
+            "bangalore": "BLR",
+            "chennai": "MAA",
+            "kolkata": "CCU",
+            "hyderabad": "HYD",
+            "pune": "PNQ",
+            "goa": "GOI"
+        }
+        
+        location_lower = location.lower()
+        for city, code in city_codes.items():
+            if city in location_lower:
+                return code
+        
+        # Default fallback
+        return "BOM"
+
+    def _mock_hotel_search_response(self, city_code, checkin_date, checkout_date, adults, rooms):
+        """Generate mock hotel search response"""
+        return {
+            "meta": {"count": 3},
+            "data": [
+                {
+                    "type": "hotel-offer",
+                    "id": "1",
+                    "checkInDate": checkin_date,
+                    "checkOutDate": checkout_date,
+                    "hotel": {
+                        "type": "hotel",
+                        "hotelId": "HTL001",
+                        "name": f"Grand Hotel {city_code}",
+                        "rating": 4.5,
+                        "cityCode": city_code,
+                        "address": {
+                            "lines": [f"123 Main Street, {city_code}"],
+                            "cityName": city_code,
+                            "countryCode": "IN"
+                        },
+                        "amenities": ["WiFi", "Pool", "Gym", "Restaurant", "Spa"]
+                    },
+                    "price": {
+                        "currency": "INR",
+                        "base": "5000",
+                        "total": "5900",
+                        "variations": {
+                            "average": {"base": "5000"}
+                        }
+                    },
+                    "room": {
+                        "type": "A1K",
+                        "typeEstimated": {
+                            "category": "SUPERIOR_ROOM",
+                            "beds": 1,
+                            "bedType": "KING"
+                        }
+                    },
+                    "guests": {"adults": adults}
+                },
+                {
+                    "type": "hotel-offer",
+                    "id": "2", 
+                    "checkInDate": checkin_date,
+                    "checkOutDate": checkout_date,
+                    "hotel": {
+                        "type": "hotel",
+                        "hotelId": "HTL002",
+                        "name": f"Luxury Resort {city_code}",
+                        "rating": 4.8,
+                        "cityCode": city_code,
+                        "address": {
+                            "lines": [f"456 Beach Road, {city_code}"],
+                            "cityName": city_code,
+                            "countryCode": "IN"
+                        },
+                        "amenities": ["WiFi", "Pool", "Spa", "Beach Access", "Restaurant", "Bar"]
+                    },
+                    "price": {
+                        "currency": "INR",
+                        "base": "8000",
+                        "total": "9440",
+                        "variations": {
+                            "average": {"base": "8000"}
+                        }
+                    },
+                    "room": {
+                        "type": "A2Q",
+                        "typeEstimated": {
+                            "category": "DELUXE_ROOM",
+                            "beds": 2,
+                            "bedType": "QUEEN"
+                        }
+                    },
+                    "guests": {"adults": adults}
+                }
+            ]
         }
 
     # -----------------------------
@@ -414,3 +661,31 @@ class EMTBooking:
 
         if not self.razorpay_secret:
             return {"error": "Razorpay secret not available"}
+
+        try:
+            # Create signature
+            payload = f"{razorpay_order_id}|{razorpay_payment_id}"
+            expected_signature = hmac.new(
+                self.razorpay_secret.encode(),
+                payload.encode(),
+                hashlib.sha256
+            ).hexdigest()
+            
+            if expected_signature == razorpay_signature:
+                return {"status": "verified"}
+            else:
+                return {"error": "Payment signature verification failed"}
+        except Exception as e:
+            return {"error": f"Payment verification failed: {str(e)}"}
+
+    # -----------------------------
+    # Health Check
+    # -----------------------------
+    def health_check(self):
+        """Check service health and configuration"""
+        return {
+            "amadeus_token_available": bool(self.amadeus_token),
+            "razorpay_configured": bool(self.razorpay_key and self.razorpay_secret),
+            "mock_mode": self.use_mock,
+            "base_url": self.base_url
+        }

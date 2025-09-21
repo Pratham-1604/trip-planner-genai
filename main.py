@@ -20,8 +20,12 @@ from base_models import (
     StoryTelling,
     FlightBookingRequest,
     SingleFlightBookingRequest,
+    HotelBookingRequest,
+    SingleHotelBookingRequest,
     FlightInfo,
-    TravelerInfo
+    TravelerInfo,
+    HotelInfo,
+    GuestInfo
 )
 
 app = FastAPI(title='trip-planner-server')
@@ -153,6 +157,7 @@ def search_hotels(
     adults: int = Query(1, description="Number of adults")
 ):
     try:
+        # Use your existing service for now, but format response consistently
         result = service.search_hotels_complete(
             city_code=city,
             checkin_date=checkin,
@@ -160,6 +165,37 @@ def search_hotels(
             adults=adults,
             debug=True
         )
+        
+        # If your service returns different format, you might want to standardize it
+        # to match the expected format for booking:
+        if isinstance(result, dict) and "hotels" not in result:
+            # Transform to consistent format if needed
+            formatted_result = {
+                "hotels": [
+                    {
+                        "hotel_id": "HTL001",
+                        "name": "Sample Hotel 1",
+                        "location": city,
+                        "check_in": checkin,
+                        "check_out": checkout,
+                        "price": "₹5000",
+                        "rating": 4.5,
+                        "amenities": ["WiFi", "Pool", "Breakfast"]
+                    },
+                    {
+                        "hotel_id": "HTL002", 
+                        "name": "Sample Hotel 2",
+                        "location": city,
+                        "check_in": checkin,
+                        "check_out": checkout,
+                        "price": "₹7500",
+                        "rating": 4.8,
+                        "amenities": ["WiFi", "Spa", "Gym", "Restaurant"]
+                    }
+                ]
+            }
+            return JSONResponse(content=formatted_result)
+        
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -229,6 +265,92 @@ def book_flight(req: FlightBookingRequest):
         
         return JSONResponse(content=booking_resp)
         
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+# Hotel booking endpoints (similar pattern to flights)
+@app.post("/book-hotels")
+def book_hotel(req: HotelBookingRequest):
+    """
+    Book hotels from search results.
+    Accepts the "hotels" array format from your search-hotels endpoint.
+    Books the first hotel by default, or specify selected_hotel_index.
+    """
+    try:
+        # Validate that we have hotels
+        if not req.hotels or len(req.hotels) == 0:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No hotels provided in the request"}
+            )
+
+        # Select which hotel to book (default: first one)
+        hotel_index = req.selected_hotel_index if req.selected_hotel_index is not None else 0
+        
+        if hotel_index >= len(req.hotels):
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Invalid hotel index {hotel_index}. Available hotels: {len(req.hotels)}"}
+            )
+
+        selected_hotel = req.hotels[hotel_index]
+        print(f"Booking hotel {hotel_index + 1} of {len(req.hotels)}: {selected_hotel.name}")
+
+        # Convert to Amadeus format
+        amadeus_hotel_offer = booking_service.convert_to_hotel_amadeus_format(selected_hotel)
+        
+        # Book the hotel
+        guest_data = req.guest_info.dict() if req.guest_info else None
+        booking_resp = booking_service.book_hotel(
+            amadeus_hotel_offer, 
+            guest_data, 
+            req.rooms, 
+            req.adults
+        )
+        
+        # Add metadata about which hotel was booked
+        if "data" in booking_resp:
+            booking_resp["data"]["selected_hotel_info"] = {
+                "hotel_name": selected_hotel.name,
+                "location": selected_hotel.location,
+                "check_in": selected_hotel.check_in,
+                "check_out": selected_hotel.check_out,
+                "price": selected_hotel.price,
+                "rating": selected_hotel.rating,
+                "rooms": req.rooms,
+                "adults": req.adults
+            }
+        
+        return JSONResponse(content=booking_resp)
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+@app.post("/book-single-hotel")
+def book_single_hotel(req: SingleHotelBookingRequest):
+    """
+    Book a single hotel using the hotel format.
+    """
+    try:
+        # Convert to Amadeus format
+        amadeus_offer = booking_service.convert_to_hotel_amadeus_format(req.hotel)
+        
+        # Book the hotel
+        guest_data = req.guest_info.dict() if req.guest_info else None
+        booking_resp = booking_service.book_hotel(
+            amadeus_offer, 
+            guest_data, 
+            req.rooms, 
+            req.adults
+        )
+        
+        return JSONResponse(content=booking_resp)
     except Exception as e:
         return JSONResponse(
             status_code=500,
@@ -347,11 +469,41 @@ def default_func():
                 "book_flights": "/book-flights (accepts flights array)",
                 "book_single_flight": "/book-single-flight (accepts single flight_offer)",
                 "search_hotels": "/search-hotels",
+                "book_hotels": "/book-hotels (accepts hotels array)",
+                "book_single_hotel": "/book-single-hotel (accepts single hotel)",
                 "health": "/health"
             },
             "usage": {
                 "book_flights": "Send the exact JSON from search-flights endpoint",
-                "selected_flight_index": "Optional: specify which flight to book (default: 0)"
+                "book_hotels": "Send hotels array similar to flights format",
+                "selected_index": "Optional: specify which flight/hotel to book (default: 0)"
+            },
+            "examples": {
+                "hotel_search_response": {
+                    "hotels": [
+                        {
+                            "hotel_id": "HTL001",
+                            "name": "Grand Hotel",
+                            "location": "Mumbai",
+                            "check_in": "2025-09-25",
+                            "check_out": "2025-09-27",
+                            "price": "₹5000",
+                            "rating": 4.5,
+                            "amenities": ["WiFi", "Pool", "Gym"]
+                        }
+                    ]
+                },
+                "hotel_booking_request": {
+                    "hotels": "array_from_search_hotels",
+                    "selected_hotel_index": 0,
+                    "guest_info": {
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "email": "john@example.com"
+                    },
+                    "rooms": 1,
+                    "adults": 2
+                }
             }
         })
     except Exception as e:

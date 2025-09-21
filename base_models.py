@@ -77,10 +77,46 @@ class HotelInfo(BaseModel):
     check_out: str
     price: str
     rating: float
+    amenities: Optional[List[str]] = []
+    description: Optional[str] = ""
+    images: Optional[List[str]] = []
 
+class GuestInfo(BaseModel):
+    id: str = "1"
+    firstName: str = "John"
+    lastName: str = "Doe"
+    email: str = "john@example.com"
+    phone: str = "+919999999999"
+    address: Optional[Dict[str, str]] = {
+        "street": "123 Main St",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "country": "India",
+        "zipCode": "400001"
+    }
+    specialRequests: Optional[str] = ""
+
+# Updated to handle hotels array from search results (like flights)
 class HotelBookingRequest(BaseModel):
+    # Handle the "hotels" array from search results
+    hotels: List[HotelInfo]
+    guest_info: Optional[GuestInfo] = None
+    
+    # Optional: specify which hotel to book (default: first one)
+    selected_hotel_index: Optional[int] = 0
+    
+    # Booking details
+    rooms: Optional[int] = 1
+    adults: Optional[int] = 1
+    children: Optional[int] = 0
+
+# Alternative model for single hotel booking
+class SingleHotelBookingRequest(BaseModel):
     hotel: HotelInfo
-    guest_info: Optional[Dict[str, Any]] = None
+    guest_info: Optional[GuestInfo] = None
+    rooms: Optional[int] = 1
+    adults: Optional[int] = 1
+    children: Optional[int] = 0
 
 # Payment models
 class PaymentRequest(BaseModel):
