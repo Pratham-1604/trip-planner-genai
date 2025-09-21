@@ -11,6 +11,22 @@ class ClarrifyingUserReq(BaseModel):
 class StoryTelling(BaseModel):
     iternary: dict
 
+class OptimizeRequest(BaseModel):
+    itinerary_json: dict
+    parsed_input: dict
+    start_day: int = 2
+    city: str = "Goa"
+
+
+class OptimizeResponse(BaseModel):
+    iternary: list
+    total_estimated_cost: int
+
+class ItineraryRequest(BaseModel):
+    start_day: int = 2
+    city: str  # single city for the whole trip
+    iternary: dict
+
 class HotelSearchRequest(BaseModel):
     city_code: str
     checkin_date: str
@@ -128,3 +144,5 @@ class PaymentCaptureRequest(BaseModel):
     payment_id: str
     amount: float
     vendor: str = "general"
+
+

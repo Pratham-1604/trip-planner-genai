@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException
 
 # Import your existing features
 from features.iternary_generation.llm_parser import llm_parse_user_input, generate_clarifying_questions
@@ -12,7 +13,7 @@ from features.reddit_scraper.summarizer import summarize_places
 from features.emt_plus_payment.emt_service import EMTService
 from features.emt_plus_payment.emt_booking import EMTBooking
 from features.iternary_generation.basic_visualization_generation import visualization_generation, add_images_to_itinerary
-
+from features.predictive_pipeline.weather_optimizer import optimize_itinerary
 # Import models from base_models
 from base_models import (
     UserRequest,
@@ -25,7 +26,10 @@ from base_models import (
     FlightInfo,
     TravelerInfo,
     HotelInfo,
-    GuestInfo
+    GuestInfo,
+    ItineraryRequest,
+    OptimizeRequest,
+    OptimizeResponse
 )
 
 app = FastAPI(title='trip-planner-server')
@@ -144,6 +148,8 @@ def get_story_telling(input_data: StoryTelling):
                 'message': 'Failed to Generate Visual Story'
             }
         )
+
+     
 
 # Initialize services
 service = EMTService(use_mock=True)
@@ -445,6 +451,16 @@ def book_flights_search_workflow(req: FlightBookingRequest):
             content={"error": f"Search and booking failed: {str(e)}"}
         )
 
+
+@app.post("/optimize-itinerary")
+def optimize_itinerary_api(req: OptimizeRequest):
+    return optimize_itinerary(
+        itinerary_json=req.itinerary_json,
+        parsed_input=req.parsed_input,
+        start_day=req.start_day,
+        city=req.city
+    )
+
 @app.get('/health')
 def health_check():
     """Health check endpoint"""
@@ -457,6 +473,8 @@ def health_check():
     except Exception as e:
         print(f"Health check error: {e}")
         return JSONResponse(status_code=503, content={"error": str(e)})
+
+
 
 @app.get('/')
 def default_func():
