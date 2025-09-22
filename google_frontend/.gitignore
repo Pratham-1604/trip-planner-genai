@@ -1,7 +1,3 @@
-.venv/
-.env
-__pycache__
-
 # Miscellaneous
 *.class
 *.log
@@ -58,4 +54,3 @@ secrets/
 *.key
 
 firebase_options.dart
-firebase.json

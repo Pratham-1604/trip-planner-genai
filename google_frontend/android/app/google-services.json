@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "132308409621",
+    "project_id": "trip-planner--genai",
+    "storage_bucket": "trip-planner--genai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:132308409621:android:f82962895fb85d54711d1c",
+        "android_client_info": {
+          "package_name": "com.example.google_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB664mCUje_g_5JarpmWVxJ4Bg38mLLU1U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
