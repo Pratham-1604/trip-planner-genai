@@ -77,20 +77,20 @@ itinerary = {
     ]
 }
 
-print("📍 Original Itinerary:")
-for day in itinerary["itinerary"]:
-    print(day)
+# print("📍 Original Itinerary:")
+# for day in itinerary["itinerary"]:
+#     print(day)
 
-optimized, reasons = optimize_itinerary_sequence(
-    itinerary_json=itinerary,
-    start_time=datetime.datetime.now(),
-    default_activity_duration=90
-)
+# optimized, reasons = optimize_itinerary_sequence(
+#     itinerary_json=itinerary,
+#     start_time=datetime.datetime.now(),
+#     default_activity_duration=90
+# )
 
-print("\n✅ Optimized Itinerary:")
-for day in optimized["itinerary"]:
-    print(day)
+# print("\n✅ Optimized Itinerary:")
+# for day in optimized["itinerary"]:
+#     print(day)
 
-print("\n📌 Reasons for Optimization:")
-for r in reasons:
-    print("-", r)
+# print("\n📌 Reasons for Optimization:")
+# for r in reasons:
+#     print("-", r)

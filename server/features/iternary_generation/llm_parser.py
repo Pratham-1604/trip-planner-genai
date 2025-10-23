@@ -44,7 +44,7 @@ def llm_parse_user_input(text: str):
     """
     prompt = f"""
     You are a travel request parser.  
-    Your task is to extract structured trip details from a user’s natural language request.  
+    Your task is to extract structured trip details from a user's natural language request.  
     Always return a single valid JSON object (no text, no markdown).  
     If information is missing or unclear, use sensible defaults.  
 
@@ -66,6 +66,7 @@ def llm_parse_user_input(text: str):
     - must_include: list of strings (must-see attractions if specified, else [])  
     - must_exclude: list of strings (things to avoid if specified, else [])  
     - purpose: string (honeymoon, vacation, family trip, backpacking, workation, etc.; default "unspecified")  
+    - _extracted_from_user: object (track what was actually provided by user vs defaulted)
 
     ### Input:
     "{text}"
@@ -88,7 +89,20 @@ def llm_parse_user_input(text: str):
       "activity_pace": "...",
       "must_include": [...],
       "must_exclude": [...],
-      "purpose": "..."
+      "purpose": "...",
+      "_extracted_from_user": {{
+        "location": true/false,
+        "duration_days": true/false,
+        "budget": true/false,
+        "when": true/false,
+        "num_travelers": true/false,
+        "traveler_type": true/false,
+        "accommodation": true/false,
+        "food_preferences": true/false,
+        "transport_mode": true/false,
+        "include_travel_costs": true/false,
+        "preferences": true/false
+      }}
     }}
     """
     response = invoke_llm(prompt)
@@ -126,30 +140,35 @@ def find_missing_fields(parsed: dict):
     """
     Identify fields that are still defaults or unspecified.
     Returns a list of keys that need clarification.
+    Uses the _extracted_from_user tracking to determine what was actually provided.
     """
     missing = []
-
-    if parsed["location"] == "Unknown":
+    
+    # Check if we have extraction tracking
+    extracted = parsed.get("_extracted_from_user", {})
+    
+    # Use extraction tracking if available, otherwise fall back to value checking
+    if not extracted.get("location", False) and parsed["location"] == "Unknown":
         missing.append("location")
-    if parsed["budget"] == DEFAULT_SCHEMA["budget"]:
+    if not extracted.get("budget", False) and parsed["budget"] == DEFAULT_SCHEMA["budget"]:
         missing.append("budget")
-    if parsed["duration_days"] == DEFAULT_SCHEMA["duration_days"]:
+    if not extracted.get("duration_days", False) and parsed["duration_days"] == DEFAULT_SCHEMA["duration_days"]:
         missing.append("duration_days")
-    if parsed["when"] == "unspecified":
+    if not extracted.get("when", False) and parsed["when"] == "unspecified":
         missing.append("when")
-    if parsed["num_travelers"] == DEFAULT_SCHEMA["num_travelers"]:
+    if not extracted.get("num_travelers", False) and parsed["num_travelers"] == DEFAULT_SCHEMA["num_travelers"]:
         missing.append("num_travelers")
-    if parsed["traveler_type"] == "unspecified":
+    if not extracted.get("traveler_type", False) and parsed["traveler_type"] == "unspecified":
         missing.append("traveler_type")
-    if parsed["accommodation"] == "unspecified":
+    if not extracted.get("accommodation", False) and parsed["accommodation"] == "unspecified":
         missing.append("accommodation")
-    if parsed["food_preferences"] == "unspecified":
+    if not extracted.get("food_preferences", False) and parsed["food_preferences"] == "unspecified":
         missing.append("food_preferences")
-    if parsed["transport_mode"] == "unspecified":
+    if not extracted.get("transport_mode", False) and parsed["transport_mode"] == "unspecified":
         missing.append("transport_mode")
-    if parsed["include_travel_costs"] == "unspecified":
+    if not extracted.get("include_travel_costs", False) and parsed["include_travel_costs"] == "unspecified":
         missing.append("include_travel_costs")
-    if parsed["preferences"] == "none":
+    if not extracted.get("preferences", False) and parsed["preferences"] == "none":
         missing.append("preferences")
 
     return missing
