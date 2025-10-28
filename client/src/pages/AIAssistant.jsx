@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-export function AIAssistant() {
+export default function AIAssistant() {
   const [messages, setMessages] = useState([
     {
       id: "1",

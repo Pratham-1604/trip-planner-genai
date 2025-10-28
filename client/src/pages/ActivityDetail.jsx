@@ -12,7 +12,7 @@ import {
   Clock
 } from 'lucide-react';
 
-export function ActivityDetail() {
+export default function ActivityDetail() {
   const { itineraryId, activityIndex } = useParams();
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(parseInt(activityIndex || '0'));
