@@ -9,13 +9,19 @@ import {
   MapPin,
   IndianRupee,
   Plane,
-  Clock
+  Clock,
+  FileDown
 } from 'lucide-react';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";  // ✅ named import, not just "import 'jspdf-autotable'"
+
 
 export default function ActivityDetail() {
   const { itineraryId, activityIndex } = useParams();
   const navigate = useNavigate();
-  const [currentIndex, setCurrentIndex] = useState(parseInt(activityIndex || '0'));
+  const [currentIndex, setCurrentIndex] = useState(
+    parseInt(activityIndex || "0")
+  );
   const [activities, setActivities] = useState([]);
 
   useEffect(() => {
@@ -25,36 +31,81 @@ export default function ActivityDetail() {
   function loadActivities() {
     const mockActivities = [
       {
-        time: '14:00',
-        title: 'Kamakhya Mandir',
+        time: "14:00",
+        title: "Kamakhya Mandir",
         description:
-          'A powerful Shakti Peeth, this revered temple on Nilachal Hill offers spectacular views and deep spiritual significance. The temple is one of the oldest and most revered centers of Tantric practices and is dedicated to the mother goddess Kamakhya.',
-        location: 'Nilachal Hill, Guwahati',
+          "A powerful Shakti Peeth, this revered temple on Nilachal Hill offers spectacular views and deep spiritual significance. The temple is one of the oldest and most revered centers of Tantric practices and is dedicated to the mother goddess Kamakhya.",
+        location: "Nilachal Hill, Guwahati",
         cost: 500,
-        type: 'afternoon',
+        type: "afternoon",
       },
       {
-        time: '17:00',
-        title: 'Sunset at Brahmaputra',
+        time: "17:00",
+        title: "Sunset at Brahmaputra",
         description:
-          'Experience the breathtaking sunset over the mighty Brahmaputra River. Take a river cruise to witness the golden hues reflecting on the water while enjoying the cool evening breeze.',
-        location: 'Brahmaputra Riverfront',
+          "Experience the breathtaking sunset over the mighty Brahmaputra River. Take a river cruise to witness the golden hues reflecting on the water while enjoying the cool evening breeze.",
+        location: "Brahmaputra Riverfront",
         cost: 800,
-        type: 'evening',
+        type: "evening",
       },
       {
-        time: '19:30',
-        title: 'Traditional Assamese Dinner',
+        time: "19:30",
+        title: "Traditional Assamese Dinner",
         description:
-          'Savor authentic Assamese cuisine at a local restaurant. Try dishes like Masor Tenga (sour fish curry), Khar, and finish with Pitha (rice cakes).',
-        location: 'Paradise Restaurant',
+          "Savor authentic Assamese cuisine at a local restaurant. Try dishes like Masor Tenga (sour fish curry), Khar, and finish with Pitha (rice cakes).",
+        location: "Paradise Restaurant",
         cost: 600,
-        type: 'evening',
+        type: "evening",
       },
     ];
 
     setActivities(mockActivities);
   }
+
+  // 🧾 Function to generate the PDF
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Trip Itinerary - Activity Details", 14, 20);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+
+    const tableData = activities.map((a, index) => [
+      index + 1,
+      a.title,
+      a.time,
+      a.location,
+      `₹${a.cost}`,
+      a.description,
+    ]);
+
+   autoTable(doc, {
+     startY: 30,
+     head: [["#", "Title", "Time", "Location", "Cost", "Description"]],
+     body: activities.map((a, i) => [
+       i + 1,
+       a.title,
+       a.time,
+       a.location,
+       `₹${a.cost}`,
+       a.description,
+     ]),
+     styles: { cellPadding: 3, valign: "middle", fontSize: 10 },
+     headStyles: { fillColor: [33, 150, 243] },
+     columnStyles: {
+       0: { cellWidth: 10 },
+       1: { cellWidth: 40 },
+       2: { cellWidth: 20 },
+       3: { cellWidth: 35 },
+       4: { cellWidth: 20 },
+       5: { cellWidth: "auto" },
+     },
+   });
+
+
+    doc.save("Trip_Activities.pdf");
+  };
 
   const currentActivity = activities[currentIndex];
   const totalActivities = activities.length;
@@ -96,8 +147,12 @@ export default function ActivityDetail() {
                   <Plane className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Activity Details</h1>
-                  <p className="text-sm text-gray-600">Afternoon Explorations</p>
+                  <h1 className="text-xl font-bold text-gray-900">
+                    Activity Details
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Afternoon Explorations
+                  </p>
                 </div>
               </div>
             </div>
@@ -109,6 +164,14 @@ export default function ActivityDetail() {
               <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl transition text-white font-medium">
                 <Share2 className="w-4 h-4" />
                 Share
+              </button>
+              {/* 🧾 PDF Button */}
+              <button
+                onClick={generatePDF}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 rounded-xl transition text-white font-medium"
+              >
+                <FileDown className="w-4 h-4" />
+                Download PDF
               </button>
             </div>
           </div>
@@ -122,17 +185,23 @@ export default function ActivityDetail() {
               <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-3xl mx-auto mb-4 flex items-center justify-center border-4 border-white/20">
                 <span className="text-7xl">🏛️</span>
               </div>
-              <p className="text-white/80 text-sm font-medium">Image not available</p>
+              <p className="text-white/80 text-sm font-medium">
+                Image not available
+              </p>
             </div>
             <div className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-              <span className="text-white font-semibold text-sm uppercase">{currentActivity.type}</span>
+              <span className="text-white font-semibold text-sm uppercase">
+                {currentActivity.type}
+              </span>
             </div>
           </div>
 
           <div className="p-10">
             <div className="flex items-start justify-between mb-8">
               <div className="flex-1">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">{currentActivity.title}</h2>
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  {currentActivity.title}
+                </h2>
                 <div className="flex items-center gap-6 text-gray-600">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
@@ -143,7 +212,9 @@ export default function ActivityDetail() {
                       <span className="text-gray-300">•</span>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5" />
-                        <span className="font-medium">{currentActivity.location}</span>
+                        <span className="font-medium">
+                          {currentActivity.location}
+                        </span>
                       </div>
                     </>
                   )}
@@ -161,15 +232,21 @@ export default function ActivityDetail() {
             </div>
 
             <div className="prose prose-lg max-w-none">
-              <p className="text-gray-700 leading-relaxed text-lg">{currentActivity.description}</p>
+              <p className="text-gray-700 leading-relaxed text-lg">
+                {currentActivity.description}
+              </p>
             </div>
 
             <div className="mt-10 bg-blue-50 rounded-2xl p-8 border-l-4 border-blue-600">
-              <h3 className="font-bold text-xl text-gray-900 mb-3">What to Expect</h3>
+              <h3 className="font-bold text-xl text-gray-900 mb-3">
+                What to Expect
+              </h3>
               <p className="text-gray-700 leading-relaxed">
-                Discover more amazing places! After visiting {currentActivity.title}, explore nearby attractions,
-                try local street food, or simply soak in the vibrant atmosphere of the area. Don't forget to bring
-                your camera to capture the memorable moments.
+                Discover more amazing places! After visiting{" "}
+                {currentActivity.title}, explore nearby attractions, try local
+                street food, or simply soak in the vibrant atmosphere of the
+                area. Don't forget to bring your camera to capture the memorable
+                moments.
               </p>
             </div>
           </div>
@@ -188,7 +265,8 @@ export default function ActivityDetail() {
           <div className="text-center">
             <div className="text-sm text-gray-500 mb-1">Activity</div>
             <div className="text-2xl font-bold text-gray-900">
-              {currentIndex + 1} <span className="text-gray-400">of</span> {totalActivities}
+              {currentIndex + 1} <span className="text-gray-400">of</span>{" "}
+              {totalActivities}
             </div>
           </div>
 
