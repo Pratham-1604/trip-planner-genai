@@ -131,8 +131,8 @@ Please share these details, and I'll craft an amazing trip for you!`;
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-3xl shadow-lg flex flex-col h-[calc(100vh-200px)]">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-3xl shadow-lg flex flex-col min-h-[80vh] sm:min-h-[85vh] max-h-[calc(100vh-150px)]">
           <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {messages.map((message) => (
               <div

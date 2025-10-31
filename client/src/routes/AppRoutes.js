@@ -7,6 +7,7 @@ import Home from "../pages/Home";
 import AIAssistant from "../pages/AIAssistant";
 import TripItinerary from "../pages/TripItinerary";
 import ActivityDetail from "../pages/ActivityDetail";
+import Discovery from "../pages/Discovery";
 
 // 🔒 ProtectedRoute — only accessible if logged in
 function ProtectedRoute({ children }) {
@@ -111,6 +112,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <TripItinerary />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/discovery"
+        element={
+          <ProtectedRoute>
+            <Discovery/>
           </ProtectedRoute>
         }
       />

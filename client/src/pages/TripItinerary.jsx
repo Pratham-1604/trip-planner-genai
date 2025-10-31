@@ -10,8 +10,9 @@ import {
   MapPin,
   IndianRupee,
   Plane,
+  Sparkles,
 } from "lucide-react";
-import { db } from "../firebase"; // ✅ make sure firebase.js exports `db`
+import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import {
   doc,
@@ -22,6 +23,8 @@ import {
   getDocs,
   orderBy,
 } from "firebase/firestore";
+import { StoriesModal } from "../components/StoriesModal";
+import GeneratePDF from "../components/GeneratePDF";
 
 export default function TripItinerary() {
   const { tripId } = useParams();
@@ -30,30 +33,21 @@ export default function TripItinerary() {
   const [trip, setTrip] = useState(null);
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showStories, setShowStories] = useState(false);
+  const [stories, setStories] = useState([]);
 
   useEffect(() => {
-    if (tripId) {
-      loadTripData();
-    } else {
-      loadMockData();
-    }
+    if (tripId) loadTripData();
+    else loadMockData();
   }, [tripId]);
 
-  // ✅ Fetch trip + itineraries from Firestore
   async function loadTripData() {
     try {
-      // Fetch trip document
       const tripRef = doc(db, "trips", tripId);
       const tripSnap = await getDoc(tripRef);
-
-      if (!tripSnap.exists()) {
-        console.warn("Trip not found, loading mock data...");
-        return loadMockData();
-      }
+      if (!tripSnap.exists()) return loadMockData();
 
       const tripData = tripSnap.data();
-
-      // Fetch related itineraries ordered by day_number
       const itinerariesRef = collection(db, "itineraries");
       const q = query(
         itinerariesRef,
@@ -61,7 +55,6 @@ export default function TripItinerary() {
         orderBy("day_number", "asc")
       );
       const itinerarySnap = await getDocs(q);
-
       const itineraryData = itinerarySnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -69,6 +62,7 @@ export default function TripItinerary() {
 
       setTrip({ id: tripSnap.id, ...tripData });
       setItineraries(itineraryData || []);
+      loadMockStories();
     } catch (error) {
       console.error("Error loading trip:", error);
       loadMockData();
@@ -77,7 +71,6 @@ export default function TripItinerary() {
     }
   }
 
-  // ✅ Fallback: mock data
   function loadMockData() {
     const mockTrip = {
       id: "mock-1",
@@ -86,12 +79,6 @@ export default function TripItinerary() {
       destination: "Gujarat",
       duration_days: 7,
       budget: 22000,
-      start_date: null,
-      end_date: null,
-      status: "planning",
-      preferences: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     const mockItineraries = [
@@ -99,34 +86,42 @@ export default function TripItinerary() {
         id: "1",
         trip_id: "mock-1",
         day_number: 1,
-        date: null,
-        daily_budget: 3500,
         activities: [
           {
             time: "09:00",
             title: "Arrival at Dwarkadhish",
-            description:
-              "Arrive at Dwarkadhish (Dwarka) International Airport...",
             location: "Dwarka International Airport",
             cost: 2600,
+            description:
+              "Arrive at Dwarka and check into your accommodation.",
             type: "morning",
           },
           {
             time: "14:00",
             title: "Visit Dwarkadhish Temple",
-            description: "Visit the majestic Dwarkadhish Mandir...",
             location: "Dwarkadhish Temple",
             cost: 500,
+            description: "Explore the temple and the view of Arabian Sea.",
             type: "afternoon",
           },
         ],
-        created_at: new Date().toISOString(),
       },
     ];
 
     setTrip(mockTrip);
     setItineraries(mockItineraries);
+    loadMockStories();
     setLoading(false);
+  }
+
+  function loadMockStories() {
+    setStories([
+      {
+        id: "1",
+        title: "Dwarkadhish Temple",
+        description: "A spiritual journey at the ancient temple.",
+      },
+    ]);
   }
 
   function getTimeIcon(type) {
@@ -143,52 +138,58 @@ export default function TripItinerary() {
     }
   }
 
-  async function handleSaveItinerary() {
-    alert("Itinerary saved successfully!");
-  }
-
-  function handleShareItinerary() {
-    alert("Share functionality coming soon!");
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading itinerary...</div>
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        Loading itinerary...
       </div>
     );
   }
 
+  const columns = ["Day", "Time", "Title", "Location", "Cost"];
+  const pdfData = itineraries.flatMap((day) =>
+    day.activities.map((a) => ({
+      Day: day.day_number,
+      Time: a.time,
+      Title: a.title,
+      Location: a.location,
+      Cost: a.cost,
+    }))
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* 🔹 Navbar */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-xl">
-                <Plane className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Trip Itinerary
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {trip?.destination || "Your Journey"}
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate("/")}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <Plane className="w-6 h-6 text-blue-600" />
+          <h1 className="text-xl font-bold text-gray-900">
+            Trip Itinerary - {trip?.destination}
+          </h1>
         </div>
       </nav>
 
-      {/* 🗓️ Render Itinerary */}
+      <div className="max-w-5xl mx-auto px-6 py-6 flex gap-4">
+        <GeneratePDF
+          title="Trip Itinerary Report"
+          columns={columns}
+          data={pdfData}
+          filename="trip_itinerary"
+        />
+        <button
+          onClick={() => setShowStories(true)}
+          className="flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition"
+        >
+          <Sparkles className="w-5 h-5" />
+          View Stories
+        </button>
+      </div>
+
       <div className="max-w-4xl mx-auto p-6">
         {itineraries.map((day) => (
           <div
@@ -198,33 +199,33 @@ export default function TripItinerary() {
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Day {day.day_number}
             </h2>
-            <div className="space-y-4">
-              {day.activities.map((activity, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 border-l-4 border-blue-500 pl-4"
-                >
-                  <div className="mt-1">{getTimeIcon(activity.type)}</div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {activity.time} — {activity.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {activity.description}
-                    </p>
-                    <p className="text-sm text-gray-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {activity.location}
-                    </p>
-                    <p className="text-sm text-gray-700 flex items-center gap-1">
-                      <IndianRupee className="w-3 h-3" /> {activity.cost}
-                    </p>
-                  </div>
+            {day.activities.map((activity, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 border-l-4 border-blue-500 pl-4 mb-3"
+              >
+                <div className="mt-1">{getTimeIcon(activity.type)}</div>
+                <div>
+                  <h3 className="font-semibold">
+                    {activity.time} — {activity.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">{activity.description}</p>
+                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {activity.location}
+                  </p>
+                  <p className="text-sm text-gray-700 flex items-center gap-1">
+                    <IndianRupee className="w-3 h-3" /> {activity.cost}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
+
+      {showStories && (
+        <StoriesModal stories={stories} onClose={() => setShowStories(false)} />
+      )}
     </div>
   );
 }
