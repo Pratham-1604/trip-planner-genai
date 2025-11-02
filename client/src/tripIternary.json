@@ -1,0 +1,212 @@
+{
+  "trips": [
+    {
+      "id": 1,
+      "tripTitle": "Goa Adventure Getaway",
+      "destination": "Goa, India",
+      "duration": "3 Days / 2 Nights",
+      "startDate": "2025-11-05",
+      "endDate": "2025-11-07",
+      "totalCost": "₹25,000",
+      "overview": "A perfect 3-day getaway to Goa covering beaches, water sports, culture, and nightlife.",
+      "itinerary": [
+        {
+          "day": 1,
+          "title": "Arrival & North Goa Exploration",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Arrival at Goa Airport", "description": "Arrive and transfer to hotel for check-in and breakfast.", "location": "Dabolim Airport" },
+            { "time": "11:00 AM", "activity": "Visit Calangute and Baga Beach", "description": "Relax by the beach and try water sports.", "location": "North Goa" },
+            { "time": "2:00 PM", "activity": "Lunch at Britto’s Beach Shack", "description": "Enjoy Goan seafood and beach vibes.", "location": "Baga" },
+            { "time": "5:00 PM", "activity": "Explore Fort Aguada", "description": "Watch sunset from the fort.", "location": "Candolim" }
+          ]
+        },
+        {
+          "day": 2,
+          "title": "South Goa Heritage & Culture",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Visit Basilica of Bom Jesus", "description": "Explore the 16th-century UNESCO site.", "location": "Old Goa" },
+            { "time": "12:00 PM", "activity": "Miramar Beach", "description": "Peaceful afternoon walk.", "location": "Panjim" },
+            { "time": "5:00 PM", "activity": "Sunset Cruise", "description": "Enjoy cruise with Goan folk music.", "location": "Mandovi River" }
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Adventure & Departure",
+          "activities": [
+            { "time": "7:00 AM", "activity": "Dudhsagar Waterfall Safari", "description": "Thrilling jeep ride to the waterfalls.", "location": "Mollem National Park" },
+            { "time": "2:00 PM", "activity": "Departure", "description": "Transfer to airport.", "location": "Dabolim Airport" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "tripTitle": "Manali Hills Escape",
+      "destination": "Manali, Himachal Pradesh",
+      "duration": "4 Days / 3 Nights",
+      "startDate": "2025-12-10",
+      "endDate": "2025-12-13",
+      "totalCost": "₹30,000",
+      "overview": "A scenic retreat into the Himalayas filled with adventure and serene views.",
+      "itinerary": [
+        {
+          "day": 1,
+          "title": "Arrival & Mall Road",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Check-in at Hotel", "description": "Arrive and rest after journey.", "location": "Manali Town" },
+            { "time": "4:00 PM", "activity": "Stroll on Mall Road", "description": "Explore cafes and shops.", "location": "Mall Road" }
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Solang Valley Adventure",
+          "activities": [
+            { "time": "8:00 AM", "activity": "Paragliding & Zorbing", "description": "Enjoy thrilling sports.", "location": "Solang Valley" },
+            { "time": "5:00 PM", "activity": "Return to Hotel", "description": "Relax at the hotel spa.", "location": "Hotel" }
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Manikaran & Kasol Visit",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Hot Springs Visit", "description": "Soak in hot springs and visit Gurudwara.", "location": "Manikaran" },
+            { "time": "2:00 PM", "activity": "Cafe hopping", "description": "Relax by the river cafes.", "location": "Kasol" }
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Departure",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Breakfast & Checkout", "description": "Depart with memories.", "location": "Hotel" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "tripTitle": "Jaipur Royal Heritage Tour",
+      "destination": "Jaipur, Rajasthan",
+      "duration": "3 Days / 2 Nights",
+      "startDate": "2025-11-15",
+      "endDate": "2025-11-17",
+      "totalCost": "₹20,000",
+      "overview": "Experience the grandeur of the Pink City with forts, palaces, and vibrant markets.",
+      "itinerary": [
+        {
+          "day": 1,
+          "title": "City Palace & Jantar Mantar",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Visit City Palace", "description": "Explore royal heritage.", "location": "Old Jaipur" },
+            { "time": "12:00 PM", "activity": "Lunch at LMB", "description": "Taste authentic Rajasthani thali.", "location": "Johari Bazaar" }
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Amber Fort & Nahargarh",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Amber Fort Visit", "description": "Elephant ride and fort exploration.", "location": "Amer" },
+            { "time": "6:00 PM", "activity": "Sunset at Nahargarh Fort", "description": "City view from top.", "location": "Nahargarh" }
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Shopping & Departure",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Shop handicrafts", "description": "Visit local markets.", "location": "Bapu Bazaar" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "tripTitle": "Kerala Backwater Bliss",
+      "destination": "Alleppey, Kerala",
+      "duration": "4 Days / 3 Nights",
+      "startDate": "2025-11-20",
+      "endDate": "2025-11-23",
+      "totalCost": "₹35,000",
+      "overview": "Sail through serene backwaters, lush greenery, and coastal charm.",
+      "itinerary": [
+        {
+          "day": 1,
+          "title": "Arrival & Houseboat Stay",
+          "activities": [
+            { "time": "12:00 PM", "activity": "Check-in on Houseboat", "description": "Sail through palm-lined canals.", "location": "Alleppey" }
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Local Village Tour",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Coconut Plantation Walk", "description": "Meet locals and explore.", "location": "Kumarakom" }
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Beach Day",
+          "activities": [
+            { "time": "3:00 PM", "activity": "Relax at Marari Beach", "description": "Sunbathe and unwind.", "location": "Mararikulam" }
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Departure",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Check-out", "description": "Depart after breakfast.", "location": "Houseboat" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "tripTitle": "Andaman Island Retreat",
+      "destination": "Port Blair & Havelock",
+      "duration": "5 Days / 4 Nights",
+      "startDate": "2025-12-01",
+      "endDate": "2025-12-05",
+      "totalCost": "₹60,000",
+      "overview": "Dive into the turquoise waters of the Andamans with beaches and coral reefs.",
+      "itinerary": [
+        {
+          "day": 1,
+          "title": "Arrival & Cellular Jail Visit",
+          "activities": [
+            { "time": "5:00 PM", "activity": "Light and Sound Show", "description": "Evening show at Cellular Jail.", "location": "Port Blair" }
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Havelock Island",
+          "activities": [
+            { "time": "10:00 AM", "activity": "Radhanagar Beach", "description": "Relax at Asia’s best beach.", "location": "Havelock" }
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Scuba Diving & Snorkeling",
+          "activities": [
+            { "time": "8:00 AM", "activity": "Water Adventure", "description": "Experience marine life.", "location": "Elephant Beach" }
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Neil Island",
+          "activities": [
+            { "time": "9:00 AM", "activity": "Natural Bridge Visit", "description": "Explore coral formations.", "location": "Neil Island" }
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Return to Port Blair & Departure",
+          "activities": [
+            { "time": "12:00 PM", "activity": "Flight back", "description": "End of trip.", "location": "Veer Savarkar Airport" }
+          ]
+        }
+      ]
+    }
+  ]
+}
