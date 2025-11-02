@@ -8,8 +8,8 @@ load_dotenv()
 
 def fetch_place_image(place):
     # You can either use environment variables or directly paste your key here
-    api_key = os.getenv("CUSTOM_SEARCH_API_KEY") or "AIzaSyCUiEDmlNgbF1xWbZugfR-vs9dA8hQer3U"
-    cx = os.getenv("CUSTOM_SEARCH_ENGINE_ID") or "76a8fb60be6954e88"
+    api_key = os.getenv("CUSTOM_SEARCH_API_KEY")
+    cx = os.getenv("CUSTOM_SEARCH_ENGINE_ID")
 
     if not api_key or not cx:
         print("❌ Missing API key or CX. Please set them as environment variables or directly in the script.")
