@@ -1,7 +1,7 @@
 from llm_client import invoke_llm
 from features.weather.weather_service import get_weather_forecast
 from features.predictive_pipeline.travel_optimizer import optimize_itinerary_sequence
-from features.iternary_generation.iternary_generator import generate_itinerary
+from features.itinerary_generation.itinerary_generator import generate_itinerary
 import json
 import re
 
