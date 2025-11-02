@@ -66,12 +66,41 @@ def visualization_generation(itinerary: dict):
 
 def add_images_to_itinerary(itinerary_json: dict):
     """
-    Call this after visualization_generation to add image URLs to each place.
+    Adds Google image URLs to each place in the itinerary using fetch_place_image().
+    - Keeps existing imageUrl if already present.
+    - Safely extracts images from pagemap.cse_image or item.link.
+    - Uses a default fallback image when unavailable.
     """
+
     for day in itinerary_json.get("days", []):
         for place in day.get("places", []):
             place_name = place.get("name")
-            if place_name:
-                place['imageUrl'] = fetch_place_image(place_name) or "default_image.jpg"
-    return itinerary_json
 
+            if not place_name:
+                continue
+
+            # Skip if image already exists
+            if place.get("imageUrl"):
+                continue
+
+            try:
+                result = fetch_place_image(place_name)
+
+                # Safely extract image from Google Custom Search result
+                image_url = None
+                if isinstance(result, dict):
+                    if "pagemap" in result and "cse_image" in result["pagemap"]:
+                        image_url = result["pagemap"]["cse_image"][0].get("src")
+                    elif "link" in result:
+                        image_url = result["link"]
+                elif isinstance(result, str):
+                    image_url = result  # If function returns direct URL
+
+                # Assign image or fallback
+                place["imageUrl"] = image_url or "https://via.placeholder.com/400x300?text=No+Image+Available"
+
+            except Exception as e:
+                print(f"[ERROR] fetching image for {place_name}: {e}")
+                place["imageUrl"] = "https://via.placeholder.com/400x300?text=No+Image+Available"
+
+    return itinerary_json
