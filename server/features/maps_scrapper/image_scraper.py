@@ -1,4 +1,4 @@
-from serpapi import GoogleSearch
+from serpapi.google_search import GoogleSearch
 import os
 
 def fetch_place_image(place):

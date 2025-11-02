@@ -19,89 +19,134 @@ export default function AIAssistant() {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [initialPrompt, setInitialPrompt] = useState("");  // stores the first user message
+  const [needClarification, setNeedClarification] = useState(false); // controls which API to call
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Send message + store in Firestore
-  async function handleSend() {
-    if (!input.trim() || loading) return;
+async function handleSend() {
+  if (!input.trim() || loading) return;
 
-    const userMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
+  const userMessage = {
+    id: Date.now().toString(),
+    role: "user",
+    content: input,
+  };
+
+  setMessages((prev) => [...prev, userMessage]);
+  setInput("");
+  setLoading(true);
+
+  try {
+    let apiUrl = "";
+    let body = {};
+
+    // 🧭 Choose which API to call
+    if (!needClarification) {
+      apiUrl = "http://localhost:8000/generate-iternary";
+      body = { prompt: input };
+      setInitialPrompt(input);
+    } else {
+      apiUrl = "http://localhost:8000/generate-final-iternary";
+      body = {
+        prompt: initialPrompt,
+        clarrifying_answers: input,
+      };
+      setNeedClarification(false);
+    }
+
+    // 🔥 Call backend API
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    console.log("API Response:", data);
+
+    // 🧩 STEP 2 — Handle response + mark if it’s final itinerary
+    let replyText = "";
+    let isFinal = false;
+
+    if (data.message === "Need clarification") {
+      replyText = `I need some more info:\n${data.resp}`;
+      setNeedClarification(true);
+    } else {
+      replyText =
+        typeof data === "string"
+          ? data
+          : JSON.stringify(data, null, 2);
+      isFinal = true; // ✅ mark this as final itinerary
+    }
+
+    // Create assistant message (with optional itinerary data)
+    const assistantMessage = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: replyText,
+      isFinal, // track if final
+      itineraryData: isFinal ? data : null, // keep itinerary JSON
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
+    setMessages((prev) => [...prev, assistantMessage]);
 
-    try {
-      if (user) {
-        await addDoc(collection(db, "chat_messages"), {
-          user_id: user.uid,
-          role: "user",
-          content: input,
-          created_at: serverTimestamp(),
-        });
-      }
-
-      setTimeout(async () => {
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: getAIResponse(input, messages.length),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-
-        if (user) {
-          await addDoc(collection(db, "chat_messages"), {
-            user_id: user.uid,
-            role: "assistant",
-            content: assistantMessage.content,
-            created_at: serverTimestamp(),
-          });
-        }
-
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error("Error saving message:", error);
-      setLoading(false);
+    // Optional Firestore save for messages
+    if (user) {
+      addDoc(collection(db, "chat_messages"), {
+        user_id: user.uid,
+        role: "user",
+        content: input,
+        created_at: serverTimestamp(),
+      }).catch((err) => console.error("Firestore save error:", err));
     }
+
+  } catch (error) {
+    console.error("Error calling itinerary API:", error);
+    const errorMsg = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: "❌ Sorry, I couldn't generate your itinerary right now.",
+    };
+    setMessages((prev) => [...prev, errorMsg]);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function saveItineraryToFirestore(itineraryData) {
+  if (!user) {
+    alert("Please log in to save your itinerary.");
+    return;
   }
 
-  // Simple simulated AI response logic
-  function getAIResponse(userInput, messageCount) {
-    const lowerInput = userInput.toLowerCase();
+  try {
+    const tripRef = await addDoc(collection(db, "savedTrips"), {
+      userId: user.uid,
+      title: itineraryData.title || "My AI Trip",
+      description:
+        itineraryData.description ||
+        "An AI-generated personalized itinerary.",
+      itinerary: itineraryData, // store the JSON as-is
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-    if (messageCount === 1) {
-      return `Great! To create the perfect itinerary for you, I need some details:
+    // Optionally, also add to user's savedTrips array
+    await addDoc(collection(db, "users"), {
+      userId: user.uid,
+      savedTrips: [tripRef.id],
+    });
 
-• Where would you like to go?
-• How many days do you have?
-• What's your budget (in INR)?
-• What are your interests? (heritage, adventure, nightlife, food, nature, etc.)
-• Any food preferences or restrictions? (veg, non-veg, vegan, Jain, etc.)
-• What will be your transport mode?
-• Does the budget include the initial travel cost (flight, train, etc)?
-• Do you have any personal preferences for this trip?
-
-Please share these details, and I'll craft an amazing trip for you!`;
-    }
-
-    if (messageCount === 3) {
-      return "Perfect! I'm analyzing your preferences and creating a personalized itinerary. This will include accommodation, transport, experiences, and a day-by-day breakdown with cost estimates. Give me a moment...";
-    }
-
-    if (messageCount === 5) {
-      return "I've created your personalized itinerary! It's ready for you to view. You can save it, share it, or proceed to book your entire trip with a single click. Would you like to see your itinerary now?";
-    }
-
-    return "I'm processing your request. Please continue sharing details about your trip preferences.";
+    alert("✅ Itinerary saved successfully!");
+  } catch (error) {
+    console.error("Error saving itinerary:", error);
+    alert("❌ Failed to save itinerary. Please try again.");
   }
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -161,6 +206,17 @@ Please share these details, and I'll craft an amazing trip for you!`;
                   <p className="whitespace-pre-wrap leading-relaxed">
                     {message.content}
                   </p>
+                  {/* 💾 Show Save button if it's a final itinerary */}
+                  {message.isFinal && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={() => saveItineraryToFirestore(message.itineraryData)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                      >
+                        💾 Save Itinerary
+                      </button>
+                    </div>
+                  )}
                   <p className="text-xs mt-2 opacity-60">
                     {new Date().toLocaleTimeString([], {
                       hour: "2-digit",

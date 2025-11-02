@@ -14,10 +14,10 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   // 🧪 Temporarily disable auth for testing
-  return <>{children}</>;
+  // return <>{children}</>;
 
   // ✅ Uncomment this when you want to restore auth checks
-  /*
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -31,16 +31,16 @@ function ProtectedRoute({ children }) {
   }
 
   return <>{children}</>;
-  */
+  
 }
 
 // 🌐 PublicRoute — redirect if user already logged in
 function PublicRoute({ children }) {
   // 🧪 Skip auth for testing
-  return <>{children}</>;
+  // return <>{children}</>;
 
   // ✅ Uncomment this when re-enabling auth
-  /*
+  
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -56,14 +56,15 @@ function PublicRoute({ children }) {
   }
 
   return <>{children}</>;
-  */
+  
 }
 
 export default function AppRoutes() {
   return (
     <Routes>
       {/* 🧭 Public Routes (Commented for testing) */}
-      {/*
+      {
+      <>
       <Route
         path="/login"
         element={
@@ -80,7 +81,8 @@ export default function AppRoutes() {
           </PublicRoute>
         }
       />
-      */}
+      </>
+      }
 
       {/* 🏠 Protected Routes (open for testing) */}
       <Route
