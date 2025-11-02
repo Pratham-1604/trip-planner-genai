@@ -1,7 +1,7 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from features.iternary_generation.iternary_generator import generate_itinerary
+from features.itinerary_generation.itinerary_generator import generate_itinerary
 from features.reddit_scraper.scraper import fetch_reddit_comments
 from local_intelligence import extract_local_tips
 from crowd_optimizer import optimize_crowd

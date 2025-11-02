@@ -4,15 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
 
 # Import your existing features
-from features.iternary_generation.llm_parser import llm_parse_user_input, generate_clarifying_questions
-from features.iternary_generation.iternary_generator import generate_itinerary
-from features.iternary_generation.basic_tag_personalization import apply_personalization
+from features.itinerary_generation.llm_parser import llm_parse_user_input, generate_clarifying_questions
+from features.itinerary_generation.itinerary_generator import generate_itinerary
+from features.itinerary_generation.basic_tag_personalization import apply_personalization
 from features.reddit_scraper.scraper import fetch_reddit_comments
 from features.reddit_scraper.preprocess import preprocess_reddit_data
 from features.reddit_scraper.summarizer import summarize_places
 from features.emt_plus_payment.emt_service import EMTService
 from features.emt_plus_payment.emt_booking import EMTBooking
-from features.iternary_generation.basic_visualization_generation import visualization_generation, add_images_to_itinerary
+from features.itinerary_generation.basic_visualization_generation import visualization_generation, add_images_to_itinerary
 from features.predictive_pipeline.weather_optimizer import optimize_itinerary
 from data import INDIAN_AIRPORTS
 # Import models from base_models
