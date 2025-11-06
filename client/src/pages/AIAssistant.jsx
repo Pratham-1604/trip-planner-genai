@@ -21,7 +21,7 @@ export default function AIAssistant() {
   const { user } = useAuth();
   const [initialPrompt, setInitialPrompt] = useState("");  // stores the first user message
   const [needClarification, setNeedClarification] = useState(false); // controls which API to call
-
+   const API_BASE = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,11 +46,11 @@ async function handleSend() {
 
     // 🧭 Choose which API to call
     if (!needClarification) {
-      apiUrl = "http://localhost:8000/generate-iternary";
+      apiUrl = `${API_BASE}/generate-iternary`;
       body = { prompt: input };
       setInitialPrompt(input);
     } else {
-      apiUrl = "http://localhost:8000/generate-final-iternary";
+      apiUrl = `${API_BASE}/generate-final-iternary`;
       body = {
         prompt: initialPrompt,
         clarrifying_answers: input,
