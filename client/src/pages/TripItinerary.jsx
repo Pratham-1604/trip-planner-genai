@@ -43,24 +43,36 @@ export default function TripItinerary() {
 
   async function loadTripData() {
     try {
-      const tripRef = doc(db, "trips", tripId);
+      const tripRef = doc(db, "savedTrips", tripId);
       const tripSnap = await getDoc(tripRef);
       if (!tripSnap.exists()) return loadMockData();
 
       const tripData = tripSnap.data();
-      const itinerariesRef = collection(db, "itineraries");
-      const q = query(
-        itinerariesRef,
-        where("trip_id", "==", tripId),
-        orderBy("day_number", "asc")
-      );
-      const itinerarySnap = await getDocs(q);
-      const itineraryData = itinerarySnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const it = tripData.itinerary?.iternary || tripData.itinerary || {};
+      const days = Array.isArray(it.itinerary) ? it.itinerary : [];
+      const itineraryData = days.map((d, idx) => ({
+        id: String(d.day ?? idx + 1),
+        day_number: d.day ?? idx + 1,
+        estimated_cost: d.estimated_cost,
+        activities: ["morning", "afternoon", "evening"]
+          .filter((slot) => d[slot])
+          .map((slot) => ({
+            time: slot.charAt(0).toUpperCase() + slot.slice(1),
+            title: "",
+            location: "",
+            cost: null,
+            description: d[slot],
+            type: slot,
+          })),
       }));
 
-      setTrip({ id: tripSnap.id, ...tripData });
+      setTrip({
+        id: tripSnap.id,
+        ...tripData,
+        destination: tripData.title,
+        duration_days: days.length,
+        budget: it.total_estimated_cost,
+      });
       setItineraries(itineraryData || []);
       loadMockStories();
     } catch (error) {
@@ -198,6 +210,11 @@ export default function TripItinerary() {
           >
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Day {day.day_number}
+              {day.estimated_cost != null && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  (₹{day.estimated_cost.toLocaleString()})
+                </span>
+              )}
             </h2>
             {day.activities.map((activity, i) => (
               <div
@@ -207,15 +224,20 @@ export default function TripItinerary() {
                 <div className="mt-1">{getTimeIcon(activity.type)}</div>
                 <div>
                   <h3 className="font-semibold">
-                    {activity.time} — {activity.title}
+                    {activity.time}
+                    {activity.title ? ` — ${activity.title}` : ""}
                   </h3>
                   <p className="text-sm text-gray-600">{activity.description}</p>
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {activity.location}
-                  </p>
-                  <p className="text-sm text-gray-700 flex items-center gap-1">
-                    <IndianRupee className="w-3 h-3" /> {activity.cost}
-                  </p>
+                  {activity.location && (
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {activity.location}
+                    </p>
+                  )}
+                  {activity.cost != null && (
+                    <p className="text-sm text-gray-700 flex items-center gap-1">
+                      <IndianRupee className="w-3 h-3" /> {activity.cost}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

@@ -32,18 +32,34 @@ export default function Home() {
 
   async function loadTrips() {
     try {
-      const tripsRef = collection(db, "trips");
+      // const tripsRef = collection(db, "trips");
+      // const q = query(
+      //   tripsRef,
+      //   where("user_id", "==", user.uid),
+      //   orderBy("created_at", "desc"),
+      //   limit(6)
+      // );
+      const tripsRef = collection(db, "savedTrips");
       const q = query(
         tripsRef,
-        where("user_id", "==", user.uid),
-        orderBy("created_at", "desc"),
-        limit(6)
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(6),
       );
       const querySnapshot = await getDocs(q);
-      const tripsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const tripsData = querySnapshot.docs.map((doc) => {
+        const t = doc.data();
+        const it = t.itinerary?.iternary || t.itinerary || {};
+        const days = Array.isArray(it.itinerary) ? it.itinerary : [];
+        return {
+          id: doc.id,
+          ...t,
+          destination: t.title,
+          duration_days: days.length,
+          budget: it.total_estimated_cost,
+          created_at: t.createdAt,
+        };
+      });
       setTrips(tripsData);
     } catch (error) {
       console.error("Error loading trips:", error);
