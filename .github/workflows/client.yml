@@ -1,0 +1,71 @@
+# Frontend CI/CD (React -> Firebase Hosting)
+#   PR   -> build + deploy to a temporary preview URL (expires in 7 days)
+#   main -> build + deploy to the live site
+name: client
+
+on:
+  push:
+    branches: [main]
+    paths: ["client/**", "firebase.json", ".firebaserc", ".github/workflows/client.yml"]
+  pull_request:
+    paths: ["client/**", "firebase.json", ".firebaserc", ".github/workflows/client.yml"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: client-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Public values, baked into the JS bundle at build time. Set them as GitHub repo *variables*.
+      REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+      REACT_APP_FIREBASE_API_KEY: ${{ vars.REACT_APP_FIREBASE_API_KEY }}
+      REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ vars.REACT_APP_FIREBASE_AUTH_DOMAIN }}
+      REACT_APP_FIREBASE_PROJECT_ID: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
+      REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ vars.REACT_APP_FIREBASE_STORAGE_BUCKET }}
+      REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
+      REACT_APP_FIREBASE_APP_ID: ${{ vars.REACT_APP_FIREBASE_APP_ID }}
+      CI: false                  # CRA treats lint warnings as errors when CI=true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install and build
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Log in to GCP
+        # Skipped for PRs from forks (they can't get credentials)
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+          create_credentials_file: true
+
+      - name: Deploy preview (PR)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          set +e
+          OUT=$(npx -y firebase-tools@13 hosting:channel:deploy "pr-${{ github.event.number }}" --expires 7d --json 2>&1)
+          CODE=$?
+          echo "$OUT"
+          [ $CODE -ne 0 ] && exit $CODE
+          URL=$(echo "$OUT" | grep -o 'https://[^"]*web.app' | head -1)
+          echo "Preview: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy live (main)
+        if: github.event_name != 'pull_request'
+        run: npx -y firebase-tools@13 deploy --only hosting --non-interactive

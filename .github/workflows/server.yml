@@ -1,0 +1,93 @@
+# Backend CI/CD
+#   PR   -> build the Docker image (proves it builds, nothing deployed)
+#   main -> build, push to Artifact Registry, deploy to Cloud Run, check /health
+name: server
+
+on:
+  push:
+    branches: [main]
+    paths: ["server/**", ".github/workflows/server.yml"]
+  pull_request:
+    paths: ["server/**", ".github/workflows/server.yml"]
+  workflow_dispatch: {}          # adds a manual "Run workflow" button
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: asia-south1            # Mumbai
+  SERVICE: trip-planner-api
+  IMAGE: asia-south1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/trip-planner/server:${{ github.sha }}
+  # Every key below lives in GCP Secret Manager (created by scripts/gcp-setup.sh)
+  SECRETS: >-
+    GEMINI_API_KEY=GEMINI_API_KEY:latest,
+    REDDIT_CLIENT_ID=REDDIT_CLIENT_ID:latest,
+    REDDIT_CLIENT_SECRET=REDDIT_CLIENT_SECRET:latest,
+    REDDIT_USER_AGENT=REDDIT_USER_AGENT:latest,
+    AMADEUS_API_KEY=AMADEUS_API_KEY:latest,
+    AMADEUS_API_SECRET=AMADEUS_API_SECRET:latest,
+    WEATHER_API_KEY=WEATHER_API_KEY:latest,
+    GOOGLE_MAP_KEY=GOOGLE_MAP_KEY:latest,
+    SERPAPI_KEY=SERPAPI_KEY:latest,
+    CUSTOM_SEARCH_API_KEY=CUSTOM_SEARCH_API_KEY:latest,
+    CUSTOM_SEARCH_ENGINE_ID=CUSTOM_SEARCH_ENGINE_ID:latest
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker build (no push)
+        run: docker build -t server-check ./server
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write            # lets GitHub prove its identity to GCP (no keys stored)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+          docker build -t "$IMAGE" ./server
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --service-account "trip-planner-runtime@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 1Gi \
+            --timeout 300 \
+            --min-instances 0 \
+            --max-instances 3 \
+            --set-env-vars "PROJECT_ID=${PROJECT_ID},LOCATION=us-central1" \
+            --set-secrets "$(echo "$SECRETS" | tr -d ' ')" \
+            --quiet
+
+      - name: Smoke test /health
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
+          echo "Service URL: $URL" >> "$GITHUB_STEP_SUMMARY"
+          for i in 1 2 3 4 5; do
+            curl -fsS "$URL/health" && exit 0
+            sleep 10
+          done
+          echo "Health check failed"; exit 1

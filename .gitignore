@@ -58,9 +58,10 @@ secrets/
 *.key
 
 firebase_options.dart
-firebase.json
+# firebase.json is committed: CI needs it for Hosting deploys
 
 package-lock.json
+!client/package-lock.json
 
 node_modules
 .pnp
